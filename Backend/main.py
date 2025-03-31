@@ -214,10 +214,10 @@ def generate_excel(urls=None, output_path=None, upload_url=None, save_locally=Tr
     # Use default URLs if not provided
     if urls is None:
         urls = {
-            "First_Photo": "https://tms.deebugger.de/fbfd180f-2a1a-48a1-9578-35287f4a303b/?token=22bc8aca-a2b8-456e-80fd-9e711056cfb8&system_id=5",
-            "Second_Photo": "https://tms.deebugger.de/fbfd180f-2a1a-48a1-9578-35287f4a303b/?token=22bc8aca-a2b8-456e-80fd-9e711056cfb8&system_id=6",
-            "Third_Photo": "https://tms.deebugger.de/fbfd180f-2a1a-48a1-9578-35287f4a303b/?token=22bc8aca-a2b8-456e-80fd-9e711056cfb8&system_id=7",
-            "Overview_Page": "https://tms.deebugger.de/fbfd180f-2a1a-48a1-9578-35287f4a303b/?token=22bc8aca-a2b8-456e-80fd-9e711056cfb8&system_id=8"
+            "First_Photo": "https://tms.deebugger.de/bd34634c-0876-4f8f-b506-2e6cf19d34be/api/frontend/image/?id=1&most_recent",
+            "Second_Photo": "https://tms.deebugger.de/bd34634c-0876-4f8f-b506-2e6cf19d34be/api/frontend/image/?id=2&most_recent",
+            "Third_Photo": "https://tms.deebugger.de/bd34634c-0876-4f8f-b506-2e6cf19d34be/api/frontend/image/?id=3&most_recent",
+            "Overview_Page": "https://tms.deebugger.de/bd34634c-0876-4f8f-b506-2e6cf19d34be/api/frontend/image/?id=4&most_recent"
         }
     
     # Use default output path if not provided and save_locally is True
