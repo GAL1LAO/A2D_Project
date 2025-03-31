@@ -226,12 +226,13 @@ export default function OcrPhotoAnalyzer() {
   const handleGetTemplateAndPictures = async () => {
     setIsLoadingImages(true)
     try {
+      // Download Excel template automatically
+      handleDownloadExcel()
+      
       // Fetch images from cloud
       const images = await fetchImagesFromCloud(sector)
       setCloudImages(images)
       
-      // Download Excel template automatically
-      handleDownloadExcel()
     } catch (error) {
       console.error("Failed to fetch images:", error)
     } finally {
