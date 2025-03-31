@@ -10,7 +10,7 @@ import requests
 # Load API key from .env file
 load_dotenv()
 api_key = os.getenv("OPENAI_API_KEY")
-
+upload_token = os.getenv("UPLOAD_TOKEN")
 # Initialize client with API key
 client = OpenAI(api_key=api_key)
 
@@ -154,17 +154,61 @@ def process_image(image_path, prompt, sheet_name, max_retries=3):
     print("All attempts failed to produce valid data")
     return pd.DataFrame(columns=["Parameter", "Value"])
 
-def generate_excel(urls=None, output_path=None, return_bytes=False):
+# Function to upload Excel file to a given URL
+'''def upload_excel_file(file_data, upload_url, filename=None, params=None, headers=None):
     """
-    Process images from URLs and generate Excel file.
+    Upload an Excel file to a specified URL
+    
+    Args:
+        file_data: Excel file as bytes
+        upload_url: URL to upload the file to
+        filename: Name of the file to use in the upload (default: 'data.xlsx')
+        params: Additional URL parameters (optional)
+        headers: Additional headers (optional)
+        
+    Returns:
+        Response object from the request
+    """
+    if filename is None:
+        filename = 'data.xlsx'
+        
+    if headers is None:
+        headers = {}
+        
+    # Create the file object for uploading
+    files = {'file': (filename, file_data, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')}
+    
+    try:
+        # Make the POST request to upload the file
+        response = requests.post(upload_url, files=files, data=params, headers=headers)
+        response.raise_for_status()  # Raise exception for error status codes
+        print(f"Successfully uploaded file to {upload_url}")
+        print(f"Response status: {response.status_code}, {response.text}")
+        return response
+    except Exception as e:
+        print(f"Error uploading file: {str(e)}")
+        raise'''
+def upload_excel(upload_url, file_path, token):
+    with open(file_path, "rb") as file:
+        files = {"file": ("file.xlsx", file, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")}
+        data = {"token": token}
+        response = requests.post(upload_url, files=files, data=data)
+        print(response.text)
+
+def generate_excel(urls=None, output_path=None, upload_url=None, save_locally=True, return_bytes=False):
+    """
+    Process images from URLs, generate Excel file, and optionally upload it.
     
     Args:
         urls: Dictionary containing image URLs and their prompts
-        output_path: Path where to save the Excel file
+        output_path: Path where to save the Excel file locally
+        upload_url: URL to upload the Excel file to
+        save_locally: Whether to save the file locally (default: True)
         return_bytes: If True, return the Excel data as bytes instead of saving to file
         
     Returns:
         If return_bytes is True, returns the Excel file as bytes
+        If upload_url is provided, returns the response from the upload
         Otherwise returns the path to the saved Excel file
     """
     # Use default URLs if not provided
@@ -176,8 +220,8 @@ def generate_excel(urls=None, output_path=None, return_bytes=False):
             "Overview_Page": "https://tms.deebugger.de/fbfd180f-2a1a-48a1-9578-35287f4a303b/?token=22bc8aca-a2b8-456e-80fd-9e711056cfb8&system_id=8"
         }
     
-    # Use default output path if not provided
-    if output_path is None:
+    # Use default output path if not provided and save_locally is True
+    if output_path is None and save_locally:
         output_path = "/Users/adrian/Documents/Masters/Pre-Master/TMS/A2D_Project/all_extracted_data_with_overview_w_url.xlsx"
     
     # Define image prompts
@@ -218,36 +262,76 @@ def generate_excel(urls=None, output_path=None, return_bytes=False):
     overview_df = process_image(urls["Overview_Page"], overview_prompt, "Overview_Page", max_retries=5)  # More retries for overview
     all_dfs["Overview_Page"] = overview_df
 
-    # If we need to return the Excel data as bytes
-    if return_bytes:
-        output_buffer = BytesIO()
+    # Generate Excel file in memory first (needed for both saving and uploading)
+    output_buffer = BytesIO()
+    
+    # Create Excel writer using the BytesIO buffer
+    with pd.ExcelWriter(output_buffer, engine='xlsxwriter') as writer:
+        # Write each dataframe to a different sheet
+        for sheet_name, df in all_dfs.items():
+            df.to_excel(writer, sheet_name=sheet_name, index=False)
+    
+    # Get the bytes from the BytesIO object
+    output_buffer.seek(0)
+    excel_bytes = output_buffer.getvalue()
+    
+    # Save locally if requested
+    if save_locally and output_path:
+        # Save to local file
+        with open(output_path, 'wb') as f:
+            f.write(excel_bytes)
         
-        # Create Excel writer using the BytesIO buffer
-        with pd.ExcelWriter(output_buffer, engine='xlsxwriter') as writer:
-            # Write each dataframe to a different sheet
-            for sheet_name, df in all_dfs.items():
-                df.to_excel(writer, sheet_name=sheet_name, index=False)
-        
-        # Get the bytes from the BytesIO object
-        output_buffer.seek(0)
-        return output_buffer.getvalue()
-    else:
-        # Save all dataframes to a single Excel file with multiple sheets
-        with pd.ExcelWriter(output_path) as writer:
-            # Write each dataframe to a different sheet
-            for sheet_name, df in all_dfs.items():
-                df.to_excel(writer, sheet_name=sheet_name, index=False)
-        
-        print(f"All data saved to {output_path}")
+        print(f"Excel file saved locally to: {output_path}")
         
         # Display a sample of each dataframe
         for sheet_name, df in all_dfs.items():
             print(f"\nSample data from {sheet_name}:")
             print(df.head())
             print(f"Total rows in {sheet_name}: {len(df)}")
-        
+    
+    # Upload to URL if provided
+    if upload_url:
+        try:
+            # Extract filename from the output path or use default
+            filename = 'data.xlsx'
+            if output_path:
+                filename = os.path.basename(output_path)
+                
+            # Upload the file
+            print(f"Uploading Excel file to: {upload_url}")
+            #response = upload_excel_file(excel_bytes, upload_url, params, filename=filename)
+            response = upload_excel(upload_url, output_path, upload_token)
+            print("Upload completed successfully!")
+            
+            # Return the response if no other return mode is specified
+            if not return_bytes and not save_locally:
+                return response
+        except Exception as e:
+            print(f"Error during upload: {str(e)}")
+            # Continue execution to return file bytes or path as appropriate
+    
+    # Return based on specified mode
+    if return_bytes:
+        return excel_bytes
+    elif save_locally and output_path:
         return output_path
+    else:
+        # Default case if no other return mode specified
+        return None
 
 # This conditional ensures the code runs only when the script is executed directly
 if __name__ == "__main__":
-    generate_excel()
+    # Example usage:
+    
+    #For development: Save locally and don't upload
+    #generate_excel(save_locally=True, upload_url=None)
+    
+    # For production: Upload without saving locally
+    # generate_excel(save_locally=False, upload_url="https://your-upload-endpoint.com/upload")
+    
+    # For testing: Both save locally and upload
+    generate_excel(
+        save_locally=True, 
+        upload_url="https://tms.deebugger.de/bd34634c-0876-4f8f-b506-2e6cf19d34be/api/backend/results/",
+        output_path="/Users/adrian/Documents/Masters/Pre-Master/TMS/A2D_Project/all_extracted_data_with_overview_w_url.xlsx"
+    )
