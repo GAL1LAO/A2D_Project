@@ -15,6 +15,81 @@ upload_token = os.getenv("UPLOAD_TOKEN")
 # Initialize client with API key
 client = OpenAI(api_key=api_key)
 
+# Base URL for the server
+base_url = "https://tms.deebugger.de/bd34634c-0876-4f8f-b506-2e6cf19d34be"
+
+# Function to check if there are new images available
+def check_for_new_images():
+    """
+    Check if there are new images available on the server
+    
+    Returns:
+        bool: True if new images are available, False otherwise
+    """
+    try:
+        # Make request to check for new images
+        check_url = f"{base_url}/api/backend/status/"
+        headers = {"Authorization": f"Token {upload_token}"}
+        
+        response = requests.get(check_url, headers=headers)
+        response.raise_for_status()  # Raise exception for error status codes
+        
+        # Parse the JSON response
+        data = response.json()
+        
+        # Check if new images are available
+        has_new_images = data.get('exists_unprocessed_image', False)
+        print(f"New images available: {has_new_images}")
+        
+        return has_new_images
+    
+    except Exception as e:
+        print(f"Error checking for new images: {str(e)}")
+        return False
+
+# Function to get the URLs of the new images
+'''def get_image_urls():
+    """
+    Get URLs for the new images from the server
+    
+    Returns:
+        dict: Dictionary of image URLs with their appropriate keys
+    """
+    try:
+        # Make request to get image URLs
+        image_url = f"{base_url}/api/backend/get_images/"
+        headers = {"Authorization": f"Token {upload_token}"}
+        
+        response = requests.get(image_url, headers=headers)
+        response.raise_for_status()
+        
+        # Parse the JSON response
+        data = response.json()
+        
+        # Extract image URLs
+        urls = {
+            "First_Photo": data.get("first_photo_url", f"{base_url}/api/frontend/image/?id=1&most_recent"),
+            "Second_Photo": data.get("second_photo_url", f"{base_url}/api/frontend/image/?id=2&most_recent"),
+            "Third_Photo": data.get("third_photo_url", f"{base_url}/api/frontend/image/?id=3&most_recent"),
+            "Overview_Page": data.get("overview_url", f"{base_url}/api/frontend/image/?id=4&most_recent")
+        }
+        
+        print("Successfully retrieved image URLs:")
+        for key, url in urls.items():
+            print(f"{key}: {url}")
+        
+        return urls
+    
+    except Exception as e:
+        print(f"Error getting image URLs: {str(e)}")
+        # Return default URLs as fallback
+        return {
+            "First_Photo": f"{base_url}/api/frontend/image/?id=1&most_recent",
+            "Second_Photo": f"{base_url}/api/frontend/image/?id=2&most_recent",
+            "Third_Photo": f"{base_url}/api/frontend/image/?id=3&most_recent",
+            "Overview_Page": f"{base_url}/api/frontend/image/?id=4&most_recent"
+        }'''
+
 # Function to handle both local and URL images
 def get_image_data(image_path):
     """
@@ -155,46 +230,32 @@ def process_image(image_path, prompt, sheet_name, max_retries=3):
     print("All attempts failed to produce valid data")
     return pd.DataFrame(columns=["Parameter", "Value"])
 
-# Function to upload Excel file to a given URL
-'''def upload_excel_file(file_data, upload_url, filename=None, params=None, headers=None):
+# Function to upload Excel file
+def upload_excel(upload_url, file_path, token):
     """
-    Upload an Excel file to a specified URL
+    Upload an Excel file to the server with authentication
     
     Args:
-        file_data: Excel file as bytes
         upload_url: URL to upload the file to
-        filename: Name of the file to use in the upload (default: 'data.xlsx')
-        params: Additional URL parameters (optional)
-        headers: Additional headers (optional)
-        
-    Returns:
-        Response object from the request
+        file_path: Path to the Excel file
+        token: Authentication token
     """
-    if filename is None:
-        filename = 'data.xlsx'
-        
-    if headers is None:
-        headers = {}
-        
-    # Create the file object for uploading
-    files = {'file': (filename, file_data, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')}
-    
     try:
-        # Make the POST request to upload the file
-        response = requests.post(upload_url, files=files, data=params, headers=headers)
-        response.raise_for_status()  # Raise exception for error status codes
-        print(f"Successfully uploaded file to {upload_url}")
-        print(f"Response status: {response.status_code}, {response.text}")
-        return response
+        with open(file_path, "rb") as file:
+            files = {"file": ("data.xlsx", file, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")}
+            data = {"token": token}
+            headers = {"Authorization": f"Token {token}"}
+            
+            response = requests.post(upload_url, files=files, data=data, headers=headers)
+            response.raise_for_status()
+            
+            print(f"Upload successful - Status code: {response.status_code}")
+            print(f"Server response: {response.text}")
+            
+            return response
     except Exception as e:
-        print(f"Error uploading file: {str(e)}")
-        raise'''
-def upload_excel(upload_url, file_path, token):
-    with open(file_path, "rb") as file:
-        files = {"file": ("file.xlsx", file, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")}
-        data = {"token": token}
-        response = requests.post(upload_url, files=files, data=data)
-        print(response.text)
+        print(f"Error uploading Excel file: {str(e)}")
+        return None
 
 def generate_excel(urls=None, output_path=None, upload_url=None, save_locally=True, return_bytes=False):
     """
@@ -213,18 +274,20 @@ def generate_excel(urls=None, output_path=None, upload_url=None, save_locally=Tr
         Otherwise returns the path to the saved Excel file
     """
     # Use default URLs if not provided
-    if urls is None:
+    '''if urls is None:
         urls = {
-            "First_Photo": "https://tms.deebugger.de/bd34634c-0876-4f8f-b506-2e6cf19d34be/First_photo_used.png",
-            "Second_Photo": "https://tms.deebugger.de/bd34634c-0876-4f8f-b506-2e6cf19d34be/api/frontend/image/?id=2&most_recent",
-            "Third_Photo": "https://tms.deebugger.de/bd34634c-0876-4f8f-b506-2e6cf19d34be/api/frontend/image/?id=3&most_recent",
-            "Overview_Page": "https://tms.deebugger.de/bd34634c-0876-4f8f-b506-2e6cf19d34be/api/frontend/image/?id=4&most_recent"
-        }
+            "First_Photo": f"{base_url}/api/frontend/image/?id=1&most_recent",
+            "Second_Photo": f"{base_url}/api/frontend/image/?id=2&most_recent",
+            "Third_Photo": f"{base_url}/api/frontend/image/?id=3&most_recent",
+            "Overview_Page": f"{base_url}/api/frontend/image/?id=4&most_recent"
+        }'''
+    
+    # Process URLs if needed
     urls = process_images_from_urls(urls)
     
     # Use default output path if not provided and save_locally is True
     if output_path is None and save_locally:
-        output_path = "/Users/adrian/Documents/Masters/Pre-Master/TMS/A2D_Project/all_extracted_data_with_overview_w_url.xlsx"
+        output_path = "all_extracted_data.xlsx"
     
     # Define image prompts
     image_configs = [
@@ -294,14 +357,8 @@ def generate_excel(urls=None, output_path=None, upload_url=None, save_locally=Tr
     # Upload to URL if provided
     if upload_url:
         try:
-            # Extract filename from the output path or use default
-            filename = 'data.xlsx'
-            if output_path:
-                filename = os.path.basename(output_path)
-                
             # Upload the file
             print(f"Uploading Excel file to: {upload_url}")
-            #response = upload_excel_file(excel_bytes, upload_url, params, filename=filename)
             response = upload_excel(upload_url, output_path, upload_token)
             print("Upload completed successfully!")
             
@@ -321,19 +378,52 @@ def generate_excel(urls=None, output_path=None, upload_url=None, save_locally=Tr
         # Default case if no other return mode specified
         return None
 
-# This conditional ensures the code runs only when the script is executed directly
-if __name__ == "__main__":
-    # Example usage:
+# Function to run the complete workflow
+def run_image_processing_workflow():
+    """
+    Execute the full workflow:
+    1. Check for new images
+    2. If new images exist, get their URLs
+    3. Process the images and generate Excel
+    4. Upload the Excel file back to the server
+    """
+    print("Starting image processing workflow...")
     
-    #For development: Save locally and don't upload
-    #generate_excel(save_locally=True, upload_url=None)
+    # Step 1: Check for new images
+    if not check_for_new_images():
+        print("No new images available. Exiting workflow.")
+        return False
     
-    # For production: Upload without saving locally
-    # generate_excel(save_locally=False, upload_url="https://your-upload-endpoint.com/upload")
+   
+    image_urls = {
+            "First_Photo": "https://tms.deebugger.de/bd34634c-0876-4f8f-b506-2e6cf19d34be//api/backend/image/?id=1&most_recent",
+            "Second_Photo": "https://tms.deebugger.de/bd34634c-0876-4f8f-b506-2e6cf19d34be/api/backend/image/?id=2&most_recent",
+            "Third_Photo": "https://tms.deebugger.de/bd34634c-0876-4f8f-b506-2e6cf19d34be/api/backend/image/?id=3&most_recent",
+            "Overview_Page": "https://tms.deebugger.de/bd34634c-0876-4f8f-b506-2e6cf19d34be/api/backend/image/?id=4&most_recent"
+        }
     
-    # For testing: Both save locally and upload
-    generate_excel(
-        save_locally=True, 
-        upload_url="https://tms.deebugger.de/bd34634c-0876-4f8f-b506-2e6cf19d34be/api/backend/results/",
-        output_path="/Users/adrian/Documents/Masters/Pre-Master/TMS/A2D_Project/all_extracted_data_with_overview_w_url.xlsx"
+    # Step 3 & 4: Process images and upload Excel
+    output_path = "processed_data.xlsx"
+    
+    # Use the existing generate_excel function to process and upload
+    result = generate_excel(
+        urls=image_urls,
+        output_path=output_path,
+        upload_url=f"{base_url}/api/backend/results/",
+        save_locally=True
     )
+    
+    print(f"Workflow completed. Result: {result}")
+    return True
+
+# Main execution
+if __name__ == "__main__":
+    # Run the workflow once
+    while(True):
+        run_image_processing_workflow()
+        time.sleep(2*60)
+    # Alternatively, run on a schedule (uncomment to use)
+    # while True:
+    #     run_image_processing_workflow()
+    #     print("Waiting 15 minutes until next check...")
+    #     time.sleep(15 * 60)  # Check every 15 minutes
