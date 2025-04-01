@@ -6,6 +6,7 @@ from dotenv import load_dotenv
 from io import StringIO, BytesIO
 import time
 import requests
+from warp import process_images_from_urls
 
 # Load API key from .env file
 load_dotenv()
@@ -214,11 +215,12 @@ def generate_excel(urls=None, output_path=None, upload_url=None, save_locally=Tr
     # Use default URLs if not provided
     if urls is None:
         urls = {
-            "First_Photo": "https://tms.deebugger.de/bd34634c-0876-4f8f-b506-2e6cf19d34be/api/frontend/image/?id=1&most_recent",
+            "First_Photo": "https://tms.deebugger.de/bd34634c-0876-4f8f-b506-2e6cf19d34be/First_photo_used.png",
             "Second_Photo": "https://tms.deebugger.de/bd34634c-0876-4f8f-b506-2e6cf19d34be/api/frontend/image/?id=2&most_recent",
             "Third_Photo": "https://tms.deebugger.de/bd34634c-0876-4f8f-b506-2e6cf19d34be/api/frontend/image/?id=3&most_recent",
             "Overview_Page": "https://tms.deebugger.de/bd34634c-0876-4f8f-b506-2e6cf19d34be/api/frontend/image/?id=4&most_recent"
         }
+    urls = process_images_from_urls(urls)
     
     # Use default output path if not provided and save_locally is True
     if output_path is None and save_locally:

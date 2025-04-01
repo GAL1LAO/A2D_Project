@@ -1,0 +1,26 @@
+{
+  "systems": {
+    "1": {
+      "name": "Name des Systems 0",
+      "screen_detection": {
+        "min_thresh": 20,
+        "max_thresh": 150,
+        "width_def": 650,
+        "height_def": 850,
+        "dim_tolerance": 0.3
+      },
+      "io_assignment": [
+        {
+          "name": "Wert 0",
+          "x_pos": 0,
+          "y_pos": 0
+        },
+        {
+          "name": "Wert 1",
+          "x_pos": 100,
+          "y_pos": 100
+        }
+      ]
+    }
+  }
+}
