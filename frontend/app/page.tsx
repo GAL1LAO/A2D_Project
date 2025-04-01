@@ -166,47 +166,56 @@ export default function OcrPhotoAnalyzer() {
   }
 
   const handleDownloadExcel = async () => {
-    /*try {
-      // URL of the Excel file to download
-      const url = "https://tms.deebugger.de/bd34634c-0876-4f8f-b506-2e6cf19d34be/api/frontend/data/?most_recent";
+    try {
+      console.log("Starting Excel download process...");
       
-      // Fetch the Excel file
-      const response = await fetch(url);
+      // Show loading state
+      const loadingElement = document.getElementById('loading-indicator');
+      if (loadingElement) loadingElement.style.display = 'block';
       
-      if (!response.ok) {
-        throw new Error(`Failed to fetch Excel file: ${response.status} ${response.statusText}`);
-      }
+      // Step 1: First request - Initiate Excel generation and wait for completion
+      const requestUrl = "https://tms.deebugger.de/bd34634c-0876-4f8f-b506-2e6cf19d34be/api/tmp/";
       
-      // Get the file as array buffer
-      const excelBuffer = await response.arrayBuffer();
-      
-      // Create a Blob from the array buffer
-      const data = new Blob([excelBuffer], { 
-        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" 
+      const requestResponse = await fetch(requestUrl, {
+        method: 'GET'
       });
       
-      // Generate a filename with sector and persona info
-      const filename = `${sector}-${persona.toLowerCase()}-${new Date().toISOString().slice(0, 10)}.xlsx`;
+      if (!requestResponse.ok) {
+        throw new Error(`Failed to generate Excel: ${requestResponse.status}`);
+      }
       
-      // Save the file directly
-      FileSaver.saveAs(data, filename);
       
-      console.log(`Excel file downloaded and saved as ${filename}`);
+      // The server should only respond once the Excel is fully generated
+      const responseData = await requestResponse.json();
+      
+      console.log(responseData);
+      if (responseData.status !== "success") {
+        throw new Error(`Excel generation failed: ${responseData.message || "Unknown error"}`);
+      }
+      
+      console.log("Excel generation complete, proceeding to download");
+      
+      // Step 2: Second request - Download the generated Excel
+      const downloadUrl = "https://tms.deebugger.de/bd34634c-0876-4f8f-b506-2e6cf19d34be/api/frontend/data/?most_recent";
+      
+      // For this direct download approach, we need to use window.location.href
+      window.location.href = downloadUrl;
+      
+      // Hide loading indicator (though this may not execute due to page navigation)
+      if (loadingElement) loadingElement.style.display = 'none';
+      
+      console.log("Excel download initiated");
       
     } catch (error) {
-      console.error("Error downloading Excel file:", error);
-      // You may want to add error handling here, such as showing an error message to the user
-
-    }*/ 
-      if (sector === "Biogas plants") {
-        window.location.href = "https://tms.deebugger.de/bd34634c-0876-4f8f-b506-2e6cf19d34be/api/frontend/data/?most_recent"; // Change the URL here
-
-      } else if (sector === "Feed mixer") {
-        
-      } else {
-        
-      }
-    
+      // Hide loading indicator if there was an error
+      const loadingElement = document.getElementById('loading-indicator');
+      if (loadingElement) loadingElement.style.display = 'none';
+      
+      console.error("Error in Excel download process:", error);
+      alert("Failed to download Excel: " + 
+        (error instanceof Error ? error.message : "Unknown error"));
+  
+    }
   };
 
   const handleSectorChange = (value: string) => {
@@ -228,7 +237,7 @@ export default function OcrPhotoAnalyzer() {
     try {
       // Download Excel template automatically
       handleDownloadExcel()
-      
+
       // Fetch images from cloud
       const images = await fetchImagesFromCloud(sector)
       setCloudImages(images)
