@@ -59,9 +59,9 @@
 
 ## **Raspberry Pi 4B**: Runnung the backend logic.
 
-IP: `192.168.178.48` (local ip at freds place)  
+IP: `192.168.178.48` (local ip at freds place)  **please refer to internal docs for server url**  
 User: `tumawas.tms.tum.20`  
-Pass: `0FOF%se\8k|Q&#R98bIr?]35V10O`  
+Pass: **password has been changed, refer to internal documents**   
 
 
 ```
@@ -80,6 +80,8 @@ sudo ufw enable
 **Port 9090 UI:** Cockpit's web interface will be available on port 9090.
 
 **System Credentials:** You will need system credentials to log into Cockpit's web interface.
+
+<span color="red">There is now a **service** called *raspberry* that runs the **raspberry.py** file in the user directory.</span>
 
 ----
 
@@ -112,6 +114,9 @@ sudo apt update
 sudo apt install python3-opencv -y
 ```
 
+<span color="red">There is now a **service** called *raspberry* that runs the **raspberry.py** file in the user directory.</span>
+
+---
 ## **WiFi Router**:  
 
 SSID: `TUMAWAS`  
