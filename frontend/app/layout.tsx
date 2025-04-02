@@ -7,7 +7,7 @@ import { ThemeProvider } from "@/components/theme-provider"
 const inter = Inter({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
-  title: "A2D Documentation App",
+  title: "NALO Documentation App",
   description: "OCR documentation application for various industries",
 }
 
@@ -25,5 +25,17 @@ export default function RootLayout({
       </body>
     </html>
   )
-}
+}/*
+import { Providers } from "./providers"
+import "./globals.css"
+
+export default function RootLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <html lang="en" suppressHydrationWarning>
+      <body>
+        <Providers>{children}</Providers>
+      </body>
+    </html>
+  )
+}*/
 

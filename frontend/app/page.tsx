@@ -6,14 +6,19 @@ import { useState } from "react"
 import { Upload, FileText, Download, Loader2, User, FileDown, Replace } from "lucide-react"
 import FileSaver from "file-saver"
 import * as XLSX from "xlsx"
+import { useTheme } from "next-themes"
+import { Sun, Moon } from "lucide-react"
+import Image from "next/image"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { Grid } from "@/components/ui/grid"
-import { Image } from "@/components/ui/image"
+import { ImageModal } from "@/components/ui/image-modal"
+import { Container } from "@/components/ui/container"
+import { SegmentedControl } from "@/components/ui/segmented-control"
 
 // Mock OCR service
 const performOCR = async (file: File, sector: Sector, persona: Persona): Promise<OcrResult> => {
@@ -129,10 +134,15 @@ export default function OcrPhotoAnalyzer() {
   const [persona, setPersona] = useState<Persona>("Joe")
   const [sector, setSector] = useState<Sector>("Biogas plants")
   const [mode, setMode] = useState<Mode>("upload")
+  const { theme, setTheme } = useTheme()
 
   // Add state for cloud images
   const [cloudImages, setCloudImages] = useState<string[]>([])
   const [isLoadingImages, setIsLoadingImages] = useState(false)
+
+  // Add these new state variables with your other state declarations
+  const [selectedImageIndex, setSelectedImageIndex] = useState<number>(-1)
+  const [isModalOpen, setIsModalOpen] = useState(false)
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -184,10 +194,11 @@ export default function OcrPhotoAnalyzer() {
         throw new Error(`Failed to generate Excel: ${requestResponse.status}`);
       }
       
-      
       // The server should only respond once the Excel is fully generated
       const responseData = await requestResponse.json();
       
+      console.log("this is reponseData.status");
+      console.log(responseData.status);
       console.log(responseData);
       if (responseData.status !== "success") {
         throw new Error(`Excel generation failed: ${responseData.message || "Unknown error"}`);
@@ -214,7 +225,6 @@ export default function OcrPhotoAnalyzer() {
       console.error("Error in Excel download process:", error);
       alert("Failed to download Excel: " + 
         (error instanceof Error ? error.message : "Unknown error"));
-  
     }
   };
 
@@ -249,73 +259,117 @@ export default function OcrPhotoAnalyzer() {
     }
   }
 
+  // Add these handler functions
+  const handleImageClick = (index: number) => {
+    setSelectedImageIndex(index)
+    setIsModalOpen(true)
+  }
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false)
+  }
+
+  const handleNavigate = (newIndex: number) => {
+    setSelectedImageIndex(newIndex)
+  }
+
   return (
-    <div className="container mx-auto py-6 px-4">
-      {/* Top navigation bar */}
-      <div className="flex items-center justify-between mb-8">
-        {/* Persona dropdown on the left */}
-        <div className="w-1/3">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" className="flex items-center gap-2">
-                <User className="h-4 w-4" />
-                <span>Persona: {persona}</span>
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent>
-              <DropdownMenuItem onClick={() => handlePersonaChange("Joe")}>Joe</DropdownMenuItem>
-              <DropdownMenuItem onClick={() => handlePersonaChange("John")}>John</DropdownMenuItem>
-              <DropdownMenuItem onClick={() => handlePersonaChange("Günther")}>Günther</DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+    <Container className="py-2 sm:py-4 md:py-8">
+      {/* Header section */}
+      <div className="flex flex-col space-y-6">
+        {/* Top row with logo and controls */}
+        <div className="flex justify-between items-center w-full">
+          {/* Logo */}
+          <div className="flex-shrink-0">
+            <Avatar className="h-16 w-24 sm:h-20 sm:w-28 md:h-24 md:w-32">
+              <AvatarImage 
+                src="/images/vector.svg" 
+                className={theme === "light" ? "invert brightness-100" : ""}
+              />
+              <AvatarFallback>NALO</AvatarFallback>
+            </Avatar>
+          </div>
+
+          {/* Controls on the right */}
+          <div className="flex items-center gap-2 sm:gap-4">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" className="w-[90px] sm:w-[100px] md:w-[120px]">
+                  <User className="mr-2 h-3 w-3 sm:h-4 sm:w-4" />
+                  <span className="truncate text-sm sm:text-base">{persona}</span>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => setPersona("Joe")}>Joe</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setPersona("John")}>John</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setPersona("Günther")}>Günther</DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            <Button 
+              variant="outline" 
+              size="icon" 
+              onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+            >
+              {theme === "dark" ? 
+                <Sun className="h-3 w-3 sm:h-4 sm:w-4" /> : 
+                <Moon className="h-3 w-3 sm:h-4 sm:w-4" />
+              }
+            </Button>
+          </div>
         </div>
 
-        {/* Title in the center */}
-        <h1 className="text-3xl font-bold text-center w-1/3">A2D Documentation App</h1>
-
-        {/* Empty space to balance the layout */}
-        <div className="w-1/3"></div>
+        {/* Title */}
+        <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-center">
+          NALO Documentation App
+        </h1>
       </div>
 
-      {/* Sector tabs aligned in the middle */}
-      <div className="flex justify-center mb-8">
-        <Tabs value={sector} onValueChange={handleSectorChange} className="w-full max-w-2xl">
-          <TabsList className="grid grid-cols-3 w-full">
-            <TabsTrigger value="Biogas plants">Biogas plants</TabsTrigger>
-            <TabsTrigger value="Feed mixer">Feed mixer</TabsTrigger>
-            <TabsTrigger value="Solar energy systems">Solar energy systems</TabsTrigger>
-          </TabsList>
-        </Tabs>
+      {/* Sector selection */}
+      <div className="my-4 md:my-6">
+        <SegmentedControl
+          value={sector}
+          onValueChange={(value) => setSector(value as Sector)}
+          items={[
+            { value: "Biogas plants", label: "Biogas plants" },
+            { value: "Feed mixer", label: "Feed mixer" },
+            { value: "Solar energy systems", label: "Solar energy systems" },
+          ]}
+        />
       </div>
 
       {/* Mode selection */}
-      <div className="flex justify-center mb-8">
-        <Tabs value={mode} onValueChange={(value) => setMode(value as Mode)} className="w-full max-w-md">
-          <TabsList className="grid grid-cols-2 w-full">
-            <TabsTrigger value="upload">Download template and pictures</TabsTrigger>
-            <TabsTrigger value="download">Download template</TabsTrigger>
-          </TabsList>
-        </Tabs>
+      <div className="mb-4 md:mb-6">
+        <SegmentedControl
+          value={mode}
+          onValueChange={(value) => setMode(value as Mode)}
+          items={[
+            { value: "upload", label: "Download template and pictures" },
+            { value: "download", label: "Download template" },
+          ]}
+        />
       </div>
 
-      {/* Main content */}
-      <div className="grid gap-6 md:grid-cols-2">
+      {/* Cards section */}
+      <div className="grid gap-4">
         {mode === "upload" ? (
-          <Card className="md:col-span-2">
-            <CardHeader>
-              <CardTitle>Get Template and Pictures</CardTitle>
-              <CardDescription>
+          <Card className="w-full">
+            <CardHeader className="space-y-1 p-4 sm:p-6">
+              <CardTitle className="text-lg sm:text-xl md:text-2xl">
+                Get Template and Pictures
+              </CardTitle>
+              <CardDescription className="text-sm">
                 Download an Excel template and reference pictures for your documentation
                 {persona && sector && (
-                  <span className="block mt-1 text-sm">
+                  <span className="block mt-1">
                     For: <strong>{persona}</strong> in <strong className="capitalize">{sector}</strong> sector
                   </span>
                 )}
               </CardDescription>
             </CardHeader>
-            <CardContent>
-              <div className="grid gap-6">
-                <div className="flex justify-center">
+            <CardContent className="p-4 sm:p-6">
+              <div className="flex flex-col items-center gap-6">
+                <div className="w-full flex justify-center">
                   <Button 
                     onClick={handleGetTemplateAndPictures} 
                     disabled={isLoadingImages} 
@@ -337,41 +391,55 @@ export default function OcrPhotoAnalyzer() {
 
                 {/* Display cloud images */}
                 {cloudImages.length > 0 && (
-                  <div className="mt-6">
-                    <h3 className="text-lg font-medium mb-4">Reference Images</h3>
-                    <div className="grid grid-cols-2 gap-4">
+                  <div className="w-full mt-4">
+                    <h3 className="text-base sm:text-lg font-medium mb-2 sm:mb-4">Reference Images</h3>
+                    <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-4">
                       {cloudImages.map((imageUrl, index) => (
-                        <div key={index} className="border rounded-md overflow-hidden">
+                        <div 
+                          key={index} 
+                          className="border rounded-md overflow-hidden aspect-video cursor-pointer hover:opacity-90 transition-opacity"
+                          onClick={() => handleImageClick(index)}
+                        >
                           <img 
                             src={imageUrl} 
                             alt={`Reference image ${index + 1}`} 
-                            className="w-full h-auto object-contain"
-                            style={{ maxHeight: "200px" }}
+                            className="w-full h-full object-cover"
                           />
                         </div>
                       ))}
                     </div>
+
+                    {/* Image Modal */}
+                    <ImageModal
+                      images={cloudImages}
+                      currentIndex={selectedImageIndex}
+                      isOpen={isModalOpen}
+                      onClose={handleCloseModal}
+                      onNavigate={handleNavigate}
+                    />
                   </div>
                 )}
               </div>
             </CardContent>
           </Card>
         ) : (
-          <Card className="md:col-span-2">
-            <CardHeader>
-              <CardTitle>Download Template</CardTitle>
-              <CardDescription>
+          <Card className="w-full">
+            <CardHeader className="space-y-1 p-4 sm:p-6">
+              <CardTitle className="text-lg sm:text-xl md:text-2xl">
+                Download Template
+              </CardTitle>
+              <CardDescription className="text-sm">
                 Download an Excel template with sample data
                 {persona && sector && (
-                  <span className="block mt-1 text-sm">
+                  <span className="block mt-1">
                     Template for: <strong>{persona}</strong> in <strong className="capitalize">{sector}</strong> sector
                   </span>
                 )}
               </CardDescription>
             </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                  <Button onClick={handleDownloadExcel} className="w-full">
+            <CardContent className="p-4 sm:p-6">
+              <div className="w-full flex justify-center">
+              <Button onClick={handleDownloadExcel} className="w-full max-w-xs">
                   <FileDown className="mr-2 h-4 w-4" />
                   Download Excel Template
                 </Button>
@@ -381,19 +449,21 @@ export default function OcrPhotoAnalyzer() {
         )}
 
         {result && mode === "upload" && (
-          <Card className="md:col-span-2">
-            <CardHeader>
-              <CardTitle>OCR Results</CardTitle>
-              <CardDescription>
+          <Card className="w-full">
+            <CardHeader className="space-y-1 p-4 sm:p-6">
+              <CardTitle className="text-lg sm:text-xl md:text-2xl">
+                OCR Results
+              </CardTitle>
+              <CardDescription className="text-sm">
                 Extracted data from your image
                 {persona && sector && (
-                  <span className="block mt-1 text-sm">
+                  <span className="block mt-1">
                     For: <strong>{persona}</strong> in <strong className="capitalize">{sector}</strong> sector
                   </span>
                 )}
               </CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="p-4 sm:p-6">
               <Tabs defaultValue="structured">
                 <TabsList className="mb-4">
                   <TabsTrigger value="structured">Structured Data</TabsTrigger>
@@ -433,7 +503,7 @@ export default function OcrPhotoAnalyzer() {
           </Card>
         )}
       </div>
-    </div>
+    </Container>
   )
 }
 
