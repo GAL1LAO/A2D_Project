@@ -1,6 +1,8 @@
 # TUMAWAS - Systems
 
-In the Think. Make. Start. Batch 20 course, our team (TUMAWAS) developed NALO, a company, and NALO Farming, a product/solution designed to address the documentation challenges faced by farmers in Germany due to bureaucratic hurdles. The product leverages OCR technology to extract data from biogas plant interfaces, enabling farmers to easily download all necessary information in an Excel format with just one click. This streamlines data management and significantly reduces the time spent on administrative tasks.
+Within a few days and in the [Think. Make. Start.](https://www.tms.tum.de/) Batch 20 course, our team (TUMAWAS) developed NALO Farming, a product/solution designed to address the documentation challenges faced by farmers in Germany due to bureaucratic hurdles. The product leverages OCR technology to extract data from biogas plant interfaces, enabling farmers to easily download all necessary information in an Excel format with just one click. This significantly reduces the time spent on administrative tasks. This project earned us second place in the 'START' category, which honors the ideas with the most startup potential
+
+Website: [https://nalo.vercel.app/](https://nalo.vercel.app/)
 
 # General Setup
 
@@ -130,3 +132,6 @@ Config Pass: `Nalo5678`
 # Code Usage
 
 To be continued...
+
+![IMG_5911](https://github.com/user-attachments/assets/1a042876-3b45-4e57-b553-96d5f0012847)
+
