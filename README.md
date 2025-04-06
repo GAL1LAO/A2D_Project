@@ -1,5 +1,7 @@
 # TUMAWAS - Systems
 
+In the Think. Make. Start. Batch 20 course, our team (TUMAWAS) developed NALO, a company, and NALO Farming, a product/solution designed to address the documentation challenges faced by farmers in Germany due to bureaucratic hurdles. The product leverages OCR technology to extract data from biogas plant interfaces, enabling farmers to easily download all necessary information in an Excel format with just one click. This streamlines data management and significantly reduces the time spent on administrative tasks.
+
 # General Setup
 
 ---
